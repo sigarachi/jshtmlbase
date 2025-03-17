@@ -1,6 +1,6 @@
-import { MainPage } from './main-page.js'
-import { router } from './router.js'
+import { HomePage } from "./home-page.js";
+import router from "./router.js";
 
-router.use('/', MainPage)
+router.use('/', HomePage)
 
-router.start();
+router.start()

@@ -1,13 +1,12 @@
-import { Route } from './route.js'
+import {Route} from './route.js'
 
 export class Router {
     routes = []
     history = null
 
     _currentRoute = null
-    _rootQuery = ''
 
-    static __instance = null
+    __instance = null
     notFoundRoute = null
 
     constructor() {
@@ -18,79 +17,50 @@ export class Router {
         this.routes = []
         this.history = window.history
 
-        this._currentRoute = null
-
         Router.__instance = this
     }
-    
 
-    _onRoute(pathname) {
-		const route = this.getRoute(pathname);
+    _onRoute(path) {
+        const route = this.getRoute(path)
 
 
-		if (this._currentRoute && this._currentRoute !== route) {
-			this._currentRoute.leave();
-		}
+        if(this._currentRoute && this._currentRoute !== route) {
+            this._currentRoute.leave()
+        }
 
-		if (!route) {
-			this.notFoundRoute?.navigate(`/${routes.notFound}`);
-		} else {
-			this._currentRoute = route;
-
-			try {
-				route.navigate(pathname);
-			} catch (e) {
-				this._currentRoute = this.notFoundRoute;
-				this.notFoundRoute?.navigate(`/${routes.notFound}`);
-			}
-		}
-	}
-
-    use(pathname, element, context = {}) {
-		const route = new Route(pathname, element, {
-			context,
-		});
-		this.routes.push(route);
-		return this;
-	}
-
-    start() {
-		window.onpopstate = (event) => {
-			this._onRoute(event.currentTarget.location.pathname);
-		};
-
-		this._onRoute(window.location.pathname);
-	}
-
-    notFound(element) {
-		this.notFoundRoute = new Route(`/404`, element, {});
-		return this;
-	}
-
-    getRoute(pathname) {
-		return this.routes.find((route) => route.match(pathname));
-	}
-
-    getCurrentRoute() {
-		return this._currentRoute;
-	}
-
-    go(path = '') {
-        if(path) {
-            this.history.pushState({}, '', path)
-            this._onRoute(path)
+        if(!route) {
+            this.notFoundRoute.navigate('/404')
         } else {
-            this.history.go()
+            this._currentRoute = route;
+
+            try {
+                route.navigate(path)
+            } catch(e) {
+                this._currentRoute = this.notFoundRoute;
+                this.notFoundRoute.navigate('/404')
+            }
         }
     }
 
-    back() {
-        this.history.back()
+    use(path, element, context = {}) {
+        const route = new Route(path, element, {context})
+        this.routes.push(route)
+        return this
     }
 
-    forward() {
-        this.history.forward()
+    start() {
+        window.onpopstate = (event) => {
+            this._onRoute(event.currentTarget.location.pathname)
+        }
+
+        this._onRoute(window.location.pathname)
+    }
+
+    getRoute(path) {
+        return this.routes.find((element) => element.match(path))
     }
 }
 
-export const router = new Router()
+const router = new Router();
+
+export default router
