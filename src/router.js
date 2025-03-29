@@ -1,66 +1,99 @@
-import {Route} from './route.js'
+import { Route } from './route.js';
 
 export class Router {
-    routes = []
-    history = null
-
-    _currentRoute = null
-
-    __instance = null
-    notFoundRoute = null
+    routes = [];
+    history = window.history;
+    _currentRoute = null;
+    __instance = null;
+    notFoundRoute = null;
+    _lastProcessedPath = null; 
 
     constructor() {
-        if(Router.__instance) {
-            return Router.__instance
+        if (Router.__instance) {
+            return Router.__instance;
         }
 
-        this.routes = []
-        this.history = window.history
-
-        Router.__instance = this
+        this.routes = [];
+        Router.__instance = this;
     }
 
     _onRoute(path) {
-        const route = this.getRoute(path)
-
-
-        if(this._currentRoute && this._currentRoute !== route) {
-            this._currentRoute.leave()
+        if (this._lastProcessedPath === path) {
+            return;
         }
 
-        if(!route) {
-            this.notFoundRoute.navigate('/404')
-        } else {
-            this._currentRoute = route;
+        const route = this.getRoute(path);
+        this._lastProcessedPath = path;
 
-            try {
-                route.navigate(path)
-            } catch(e) {
+        if (this._currentRoute && this._currentRoute !== route) {
+            this._currentRoute.leave();
+        }
+
+        if (!route) {
+            if (this.notFoundRoute) {
                 this._currentRoute = this.notFoundRoute;
-                this.notFoundRoute.navigate('/404')
+                this.notFoundRoute.navigate('/404');
+            }
+            return;
+        }
+
+        this._currentRoute = route;
+        try {
+            route.navigate(path);
+        } catch (e) {
+            console.error('Route navigation error:', e);
+            if (this.notFoundRoute) {
+                this._currentRoute = this.notFoundRoute;
+                this.notFoundRoute.navigate('/404');
             }
         }
     }
 
     use(path, element, context = {}) {
-        const route = new Route(path, element, {context})
-        this.routes.push(route)
-        return this
+        const route = new Route(path, element, { context });
+        this.routes.push(route);
+        return this;
     }
 
     start() {
-        window.onpopstate = (event) => {
-            this._onRoute(event.currentTarget.location.pathname)
-        }
+        const debouncedOnPopState = this._debounce((event) => {
+            this._onRoute(event.currentTarget.location.pathname);
+        }, 50);
 
-        this._onRoute(window.location.pathname)
+        window.onpopstate = debouncedOnPopState;
+        this._onRoute(window.location.pathname);
     }
 
     getRoute(path) {
-        return this.routes.find((element) => element.match(path))
+        return this.routes.find(route => route.match(path));
+    }
+
+    navigate(path = '') {
+        if (!path) {
+            this.history.go();
+            return;
+        }
+
+        if (this._lastProcessedPath === path) {
+            return;
+        }
+
+        this.history.pushState({}, '', path);
+        this._onRoute(path);
+    }
+
+    _debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 }
 
 const router = new Router();
-
-export default router
+export default router;
