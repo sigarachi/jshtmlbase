@@ -1,5 +1,3 @@
-import { EventBus } from './event-bus.js'
-
 export class Block {
 
     _element = null;
@@ -10,13 +8,9 @@ export class Block {
 
 
     constructor(element, props) {
-        const eventBus = new EventBus();
-
         this._element = element;
         this._props = props;
         this._container = document.createElement('div')
-
-        this.eventBus = () => eventBus;
 
         this._init();
     }
